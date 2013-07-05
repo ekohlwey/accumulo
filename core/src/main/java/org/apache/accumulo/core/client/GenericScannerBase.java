@@ -1,0 +1,108 @@
+package org.apache.accumulo.core.client;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
+import org.apache.hadoop.io.Text;
+
+public interface GenericScannerBase<T,F,Q> extends Iterable<T>, Closeable {
+
+	/**
+   * Add a server-side scan iterator.
+   * 
+   * @param cfg
+   *          fully specified scan-time iterator, including all options for the iterator. Any changes to the iterator setting after this call are not propagated
+   *          to the stored iterator.
+   * @throws IllegalArgumentException
+   *           if the setting conflicts with existing iterators
+   */
+  public void addScanIterator(IteratorSetting cfg);
+	  
+  /**
+   * Remove an iterator from the list of iterators.
+   * 
+   * @param iteratorName
+   *          nickname used for the iterator
+   */
+  public void removeScanIterator(String iteratorName);
+  
+  /**
+   * Update the options for an iterator. Note that this does <b>not</b> change the iterator options during a scan, it just replaces the given option on a
+   * configured iterator before a scan is started.
+   * 
+   * @param iteratorName
+   *          the name of the iterator to change
+   * @param key
+   *          the name of the option
+   * @param value
+   *          the new value for the named option
+   */
+  public void updateScanIteratorOption(String iteratorName, String key, String value);
+  
+  /**
+   * Adds a column family to the list of columns that will be fetched by this scanner. By default when no columns have been added the scanner fetches all
+   * columns.
+   * 
+   * @param col
+   *          the column family to be fetched
+   */
+  public void fetchColumnFamily(F col);
+
+  /**
+   * Adds a column to the list of columns that will be fetched by this scanner. The column is identified by family and qualifier. By default when no columns
+   * have been added the scanner fetches all columns.
+   * 
+   * @param colFam
+   *          the column family of the column to be fetched
+   * @param colQual
+   *          the column qualifier of the column to be fetched
+   */
+  public void fetchColumn(F colFam, Q colQual);
+  
+  /**
+   * Clears the columns to be fetched (useful for resetting the scanner for reuse). Once cleared, the scanner will fetch all columns.
+   */
+  public void clearColumns();
+  
+  /**
+   * Clears scan iterators prior to returning a scanner to the pool.
+   */
+  public void clearScanIterators();
+  
+  /**
+   * Returns an iterator over an accumulo table. This iterator uses the options that are currently set for its lifetime, so setting options will have no effect
+   * on existing iterators.
+   * 
+   * Keys returned by the iterator are not guaranteed to be in sorted order.
+   * 
+   * @return an iterator over Key,Value pairs which meet the restrictions set on the scanner
+   */
+  public Iterator<T> iterator();
+  
+  /**
+   * This setting determines how long a scanner will automatically retry when a failure occurs. By default a scanner will retry forever.
+   * 
+   * Setting to zero or Long.MAX_VALUE and TimeUnit.MILLISECONDS means to retry forever.
+   * 
+   * @param timeOut
+   * @param timeUnit
+   *          determines how timeout is interpreted
+   * @since 1.5.0
+   */
+  public void setTimeout(long timeOut, TimeUnit timeUnit);
+  
+  /**
+   * Returns the setting for how long a scanner will automatically retry when a failure occurs.
+   * 
+   * @return the timeout configured for this scanner
+   * @since 1.5.0
+   */
+  public long getTimeout(TimeUnit timeUnit);
+  
+  
+}

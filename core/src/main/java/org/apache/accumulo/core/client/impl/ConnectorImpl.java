@@ -25,6 +25,8 @@ import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.EntryConverter;
+import org.apache.accumulo.core.client.GenericScannerBase;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.MultiTableBatchWriter;
 import org.apache.accumulo.core.client.Scanner;
@@ -135,6 +137,14 @@ public class ConnectorImpl extends Connector {
   public Scanner createScanner(String tableName, Authorizations authorizations) throws TableNotFoundException {
     ArgumentChecker.notNull(tableName, authorizations);
     return new ScannerImpl(instance, credentials, getTableId(tableName), authorizations);
+  }
+  
+  @Override
+  public <T, F, Q> GenericScannerBase<T, F, Q> createGenericScanner(
+      String tableName, Authorizations authorizations,
+      EntryConverter<T, F, Q> converter) throws TableNotFoundException {
+    return new GenericScannerImpl<T, F, Q>(instance, credentials,
+        getTableId(tableName), authorizations, converter);
   }
   
   @Override
