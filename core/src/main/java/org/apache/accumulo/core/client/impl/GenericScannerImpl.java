@@ -14,7 +14,7 @@ import org.apache.accumulo.core.security.thrift.TCredentials;
 import org.apache.accumulo.core.util.ArgumentChecker;
 import org.apache.hadoop.io.Text;
 
-public class GenericScannerImpl<T, F, Q> extends GenericScannerOptions<T,F,Q> implements GenericScanner<T, F, Q> {
+public class GenericScannerImpl<T, R, F, Q, VI, TS, V> extends ScannerOptions<T, R, F, Q, VI, TS, V> implements GenericScanner<T, R, F, Q, VI, TS, V> {
 
   // keep a list of columns over which to scan
   // keep track of the last thing read
@@ -30,11 +30,11 @@ public class GenericScannerImpl<T, F, Q> extends GenericScannerOptions<T,F,Q> im
   
   private Range range;
   private boolean isolated = false;
-  private EntryConverter<T, F, Q> converter;
+  private EntryConverter<T, R, F, Q, VI, TS, V> converter;
   
   public GenericScannerImpl(Instance instance, TCredentials credentials,
       String table, Authorizations authorizations,
-      EntryConverter<T, F, Q> entryConverter) {
+      EntryConverter<T, R, F, Q, VI, TS, V> entryConverter) {
     super(entryConverter);
     ArgumentChecker.notNull(instance, credentials, table, authorizations);
     this.instance = instance;
@@ -76,7 +76,7 @@ public class GenericScannerImpl<T, F, Q> extends GenericScannerOptions<T,F,Q> im
    */
   @Override
   public synchronized Iterator<T> iterator() {
-    return new GenericScannerIterator<T>(instance, credentials, table, authorizations, range, size, getTimeout(TimeUnit.MILLISECONDS), this, isolated, converter);
+    return new ScannerIterator<T>(instance, credentials, table, authorizations, range, size, getTimeout(TimeUnit.MILLISECONDS), this, isolated, converter);
   }
   
   @Override
@@ -87,6 +87,10 @@ public class GenericScannerImpl<T, F, Q> extends GenericScannerOptions<T,F,Q> im
   @Override
   public synchronized void disableIsolation() {
     this.isolated = false;
+  }
+  
+  protected EntryConverter<T, R, F, Q, VI, TS, V> getConverter() {
+    return converter;
   }
 
 }

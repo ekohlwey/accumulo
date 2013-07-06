@@ -22,7 +22,9 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
+import org.apache.accumulo.core.client.BatchScanner;
+import org.apache.accumulo.core.client.EntryConverter;
+import org.apache.accumulo.core.client.GenericBatchScanner;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
@@ -31,11 +33,10 @@ import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.thrift.TCredentials;
 import org.apache.accumulo.core.util.ArgumentChecker;
 import org.apache.accumulo.core.util.SimpleThreadPool;
-import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
-public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> {
-  public static final Logger log = Logger.getLogger(TabletServerBatchReader.class);
+public class GenericTabletServerBatchScannerImpl<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> extends ScannerOptions<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> implements GenericBatchScanner<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> {
+  public static final Logger log = Logger.getLogger(GenericTabletServerBatchScannerImpl.class);
   
   private String table;
   private int numThreads;
@@ -56,8 +57,8 @@ public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl
   
   private final int batchReaderInstance = getNextBatchReaderInstance();
   
-  public TabletServerBatchReader(Instance instance, TCredentials credentials, String table, Authorizations authorizations, int numQueryThreads) {
-    super(instance, credentials, table, authorizations, numQueryThreads, new ClassicAccumuloEntryConverter());
+  public GenericTabletServerBatchScannerImpl(Instance instance, TCredentials credentials, String table, Authorizations authorizations, int numQueryThreads, EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter) {
+    super(converter);
     ArgumentChecker.notNull(instance, credentials, table, authorizations);
     this.instance = instance;
     this.credentials = credentials;
@@ -82,7 +83,7 @@ public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl
   @Override
   protected void finalize() {
     if (!queryThreadPool.isShutdown()) {
-      log.warn(TabletServerBatchReader.class.getSimpleName() + " not shutdown; did you forget to call close()?", ex);
+      log.warn(GenericTabletServerBatchScannerImpl.class.getSimpleName() + " not shutdown; did you forget to call close()?", ex);
       close();
     }
   }
@@ -102,7 +103,7 @@ public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl
   }
   
   @Override
-  public Iterator<Entry<Key,Value>> iterator() {
+  public Iterator<TYPE> iterator() {
     if (ranges == null) {
       throw new IllegalStateException("ranges not set");
     }

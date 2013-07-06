@@ -37,7 +37,9 @@ import org.apache.hadoop.io.Text;
  * 
  */
 
-public class IsolatedScanner extends ScannerOptions implements Scanner {
+public class IsolatedScanner extends
+    ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value>
+    implements Scanner {
   
   private static class RowBufferingIterator implements Iterator<Entry<Key,Value>> {
     
@@ -218,6 +220,7 @@ public class IsolatedScanner extends ScannerOptions implements Scanner {
   }
   
   public IsolatedScanner(Scanner scanner, RowBufferFactory bufferFactory) {
+    super(new ClassicAccumuloEntryConverter());
     this.scanner = scanner;
     this.range = scanner.getRange();
     this.timeOut = scanner.getTimeout(TimeUnit.MILLISECONDS);

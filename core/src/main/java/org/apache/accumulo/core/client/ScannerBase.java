@@ -23,10 +23,11 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
 /**
- * This class hosts configuration methods that are shared between different types of scanners.
+ * This class hosts configuration methods that are shared between different
+ * types of scanners.
  * 
  */
-public interface ScannerBase extends GenericScannerBase<Entry<Key,Value>, Text, Text> {
-  
-  
+public interface ScannerBase extends
+    GenericScannerBase<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> {
+
 }

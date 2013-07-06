@@ -29,7 +29,7 @@ import org.apache.hadoop.io.Text;
  * example, we could restrict [a] scan ... to only produce anchors whose columns match [a] regular expression ..., or to only produce anchors whose timestamps
  * fall within ten days of the current time."
  */
-public interface Scanner extends ScannerBase, GenericScanner<Entry<Key,Value>, Text, Text> {
+public interface Scanner extends ScannerBase, GenericScanner<Entry<Key,Value>, Text,Text, Text, Text, Long, Value> {
   
   /**
    * This setting determines how long a scanner will automatically retry when a failure occurs. By default a scanner will retry forever.

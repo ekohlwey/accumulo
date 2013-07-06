@@ -16,6 +16,8 @@
  */
 package org.apache.accumulo.core.client.impl;
 
+import static org.apache.accumulo.core.client.Utils.bytesForSequence;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,8 +30,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.accumulo.core.client.EntryConverter;
+import org.apache.accumulo.core.client.GenericScannerBase;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.ScannerBase;
+import org.apache.accumulo.core.client.Utils;
 import org.apache.accumulo.core.data.Column;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -38,7 +43,7 @@ import org.apache.accumulo.core.util.ArgumentChecker;
 import org.apache.accumulo.core.util.TextUtil;
 import org.apache.hadoop.io.Text;
 
-public class ScannerOptions implements ScannerBase {
+public class ScannerOptions<T, R, F, Q, VI, TS, V> implements GenericScannerBase<T, R, F, Q, VI, TS, V> {
   
   protected List<IterInfo> serverSideIteratorList = Collections.emptyList();
   protected Map<String,Map<String,String>> serverSideIteratorOptions = Collections.emptyMap();
@@ -48,11 +53,19 @@ public class ScannerOptions implements ScannerBase {
   protected long timeOut = Long.MAX_VALUE;
   
   private String regexIterName = null;
+  private final EntryConverter<T, R, F, Q, VI, TS, V> converter;
   
-  protected ScannerOptions() {}
+  protected ScannerOptions(EntryConverter<T, R, F, Q, VI, TS, V> converter) {
+    this.converter = converter;
+  }
   
-  public ScannerOptions(ScannerOptions so) {
+  public ScannerOptions(ScannerOptions<T, R, F, Q, VI, TS, V> so) {
     setOptions(this, so);
+    this.converter = so.getConverter();
+  }
+  
+  private EntryConverter<T, R, F, Q, VI, TS, V> getConverter() {
+    return converter;
   }
   
   /**
@@ -128,16 +141,16 @@ public class ScannerOptions implements ScannerBase {
    */
   
   @Override
-  public synchronized void fetchColumnFamily(Text col) {
+  public synchronized void fetchColumnFamily(F col) {
     ArgumentChecker.notNull(col);
-    Column c = new Column(TextUtil.getBytes(col), null, null);
+    Column c = new Column(bytesForSequence(converter.getFamilyBytes(col)), null, null);
     fetchedColumns.add(c);
   }
   
   @Override
-  public synchronized void fetchColumn(Text colFam, Text colQual) {
+  public synchronized void fetchColumn(F colFam, Q colQual) {
     ArgumentChecker.notNull(colFam, colQual);
-    Column c = new Column(TextUtil.getBytes(colFam), TextUtil.getBytes(colQual), null);
+    Column c = new Column(bytesForSequence(converter.getFamilyBytes(colFam)), bytesForSequence(converter.getQualifierBytes(colQual)), null);
     fetchedColumns.add(c);
   }
   
@@ -181,7 +194,7 @@ public class ScannerOptions implements ScannerBase {
   }
   
   @Override
-  public Iterator<Entry<Key,Value>> iterator() {
+  public Iterator<T> iterator() {
     throw new UnsupportedOperationException();
   }
   

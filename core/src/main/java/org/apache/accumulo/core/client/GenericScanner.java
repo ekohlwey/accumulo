@@ -2,7 +2,7 @@ package org.apache.accumulo.core.client;
 
 import org.apache.accumulo.core.data.Range;
 
-public interface GenericScanner<T, F, Q> extends GenericScannerBase<T, F, Q> {
+public interface GenericScanner<T, R, F, Q, VI, TS, V> extends GenericScannerBase<T, R, F, Q, VI, TS, V> {
 
   /**
    * Sets the range of keys to scan over.

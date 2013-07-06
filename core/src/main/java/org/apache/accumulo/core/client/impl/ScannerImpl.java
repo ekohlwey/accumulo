@@ -21,8 +21,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.accumulo.core.Constants;
+import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.Instance;
-import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
@@ -41,7 +41,7 @@ import org.apache.hadoop.io.Text;
  * anchors whose timestamps fall within ten days of the current time."
  * 
  */
-public class ScannerImpl extends ScannerOptions implements Scanner {
+public class ScannerImpl extends GenericScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value>   {
   
   // keep a list of columns over which to scan
   // keep track of the last thing read
@@ -59,6 +59,7 @@ public class ScannerImpl extends ScannerOptions implements Scanner {
   private boolean isolated = false;
   
   public ScannerImpl(Instance instance, TCredentials credentials, String table, Authorizations authorizations) {
+    super(instance, credentials, table, authorizations, new ClassicAccumuloEntryConverter());
     ArgumentChecker.notNull(instance, credentials, table, authorizations);
     this.instance = instance;
     this.credentials = credentials;
@@ -98,8 +99,10 @@ public class ScannerImpl extends ScannerOptions implements Scanner {
    * Scanner object will have no effect on existing iterators.
    */
   @Override
-  public synchronized Iterator<Entry<Key,Value>> iterator() {
-    return new ScannerIterator(instance, credentials, table, authorizations, range, size, getTimeOut(), this, isolated);
+  public synchronized Iterator<Entry<Key, Value>> iterator() {
+    return new ScannerIterator<Entry<Key, Value>>(
+        instance, credentials, table, authorizations, range, size,
+        getTimeOut(), this, isolated, new ClassicAccumuloEntryConverter());
   }
   
   @Override
