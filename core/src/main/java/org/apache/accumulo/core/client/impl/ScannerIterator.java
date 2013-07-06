@@ -19,7 +19,6 @@ package org.apache.accumulo.core.client.impl;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
@@ -28,23 +27,23 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.EntryConverter;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.TableDeletedException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.TableOfflineException;
 import org.apache.accumulo.core.client.impl.ThriftScanner.ScanState;
 import org.apache.accumulo.core.client.impl.ThriftScanner.ScanTimedOutException;
-import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.KeyValue;
 import org.apache.accumulo.core.data.Range;
-import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.util.NamingThreadFactory;
 import org.apache.hadoop.io.Text;
 import org.apache.log4j.Logger;
 
-public class ScannerIterator implements Iterator<Entry<Key,Value>> {
+public class ScannerIterator<T> implements Iterator<T> {
   
   private static final Logger log = Logger.getLogger(ScannerIterator.class);
   
@@ -58,7 +57,7 @@ public class ScannerIterator implements Iterator<Entry<Key,Value>> {
   private Credentials credentials;
   private Instance instance;
   
-  private ScannerOptions options;
+  private ScannerOptions<T,?,?,?,?,?,?> options;
   
   private ArrayBlockingQueue<Object> synchQ;
   
@@ -66,6 +65,8 @@ public class ScannerIterator implements Iterator<Entry<Key,Value>> {
   
   private boolean readaheadInProgress;
   private long batchCount = 0;
+
+  private EntryConverter<T, ?, ?,?,?,?,?> converter;
   
   private static final List<KeyValue> EMPTY_LIST = Collections.emptyList();
   
@@ -121,8 +122,10 @@ public class ScannerIterator implements Iterator<Entry<Key,Value>> {
     
   }
   
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   ScannerIterator(Instance instance, Credentials credentials, Text table, Authorizations authorizations, Range range, int size, int timeOut,
-      ScannerOptions options, boolean isolated) {
+      GenericScannerImpl<T, ?, ?,?,?,?,?> options, boolean isolated, EntryConverter<T, ?, ?,?,?,?,?> converter) {
+    this.converter = converter;
     this.instance = instance;
     this.tableId = new Text(table);
     this.timeOut = timeOut;
@@ -197,10 +200,15 @@ public class ScannerIterator implements Iterator<Entry<Key,Value>> {
     return true;
   }
   
-  @Override
-  public Entry<Key,Value> next() {
-    if (hasNext())
-      return iter.next();
+  public T next() {
+    if (hasNext()) {
+      KeyValue currentEntry = iter.next();
+      return converter.getEntry(currentEntry.key.getRowData(), currentEntry.key
+          .getColumnFamilyData(), currentEntry.key.getColumnQualifierData(),
+          currentEntry.key.getColumnVisibilityData(), currentEntry.key
+              .getTimestamp(), new ArrayByteSequence(currentEntry.getValue()
+              .get()));
+    }
     throw new NoSuchElementException();
   }
   

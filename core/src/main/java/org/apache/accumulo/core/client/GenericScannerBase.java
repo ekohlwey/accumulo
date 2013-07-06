@@ -10,7 +10,7 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
-public interface GenericScannerBase<T,F,Q> extends Iterable<T>, Closeable {
+public interface GenericScannerBase<T, R, F, Q, VI, TS, V> extends Iterable<T>, Closeable {
 
 	/**
    * Add a server-side scan iterator.

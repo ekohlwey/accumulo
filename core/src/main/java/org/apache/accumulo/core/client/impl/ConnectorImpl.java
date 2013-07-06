@@ -28,7 +28,8 @@ import org.apache.accumulo.core.client.ConditionalWriter;
 import org.apache.accumulo.core.client.ConditionalWriterConfig;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.EntryConverter;
-import org.apache.accumulo.core.client.GenericScannerBase;
+import org.apache.accumulo.core.client.GenericBatchScanner;
+import org.apache.accumulo.core.client.GenericScanner;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.MultiTableBatchWriter;
 import org.apache.accumulo.core.client.Scanner;
@@ -55,13 +56,15 @@ public class ConnectorImpl extends Connector {
   private TableOperations tableops = null;
   private InstanceOperations instanceops = null;
   
-  public ConnectorImpl(final Instance instance, Credentials cred) throws AccumuloException, AccumuloSecurityException {
+  @Deprecated
+  public ConnectorImpl(final Instance instance, Credentials cred)
+      throws AccumuloException, AccumuloSecurityException {
     ArgumentChecker.notNull(instance, cred);
     if (cred.getToken().isDestroyed())
       throw new AccumuloSecurityException(cred.getPrincipal(), SecurityErrorCode.TOKEN_EXPIRED);
     
     this.instance = instance;
-    
+
     this.credentials = cred;
     
     // Skip fail fast for system services; string literal for class name, to avoid
@@ -75,67 +78,98 @@ public class ConnectorImpl extends Connector {
       });
     }
   }
-  
+
   private String getTableId(String tableName) throws TableNotFoundException {
     String tableId = Tables.getTableId(instance, tableName);
     if (Tables.getTableState(instance, tableId) == TableState.OFFLINE)
       throw new TableOfflineException(instance, tableId);
     return tableId;
   }
-  
+
   @Override
   public Instance getInstance() {
     return instance;
   }
-  
+
   @Override
-  public BatchScanner createBatchScanner(String tableName, Authorizations authorizations, int numQueryThreads) throws TableNotFoundException {
-    ArgumentChecker.notNull(tableName, authorizations);
-    return new TabletServerBatchReader(instance, credentials, getTableId(tableName), authorizations, numQueryThreads);
-  }
-  
-  @Deprecated
-  @Override
-  public BatchDeleter createBatchDeleter(String tableName, Authorizations authorizations, int numQueryThreads, long maxMemory, long maxLatency,
-      int maxWriteThreads) throws TableNotFoundException {
-    ArgumentChecker.notNull(tableName, authorizations);
-    return new TabletServerBatchDeleter(instance, credentials, getTableId(tableName), authorizations, numQueryThreads, new BatchWriterConfig()
-        .setMaxMemory(maxMemory).setMaxLatency(maxLatency, TimeUnit.MILLISECONDS).setMaxWriteThreads(maxWriteThreads));
-  }
-  
-  @Override
-  public BatchDeleter createBatchDeleter(String tableName, Authorizations authorizations, int numQueryThreads, BatchWriterConfig config)
+  public BatchScanner createBatchScanner(String tableName,
+      Authorizations authorizations, int numQueryThreads)
       throws TableNotFoundException {
     ArgumentChecker.notNull(tableName, authorizations);
-    return new TabletServerBatchDeleter(instance, credentials, getTableId(tableName), authorizations, numQueryThreads, config);
+    return new TabletServerBatchReader(instance, credentials,
+        getTableId(tableName), authorizations, numQueryThreads);
   }
-  
+
+  @Override
+  public <TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> GenericBatchScanner<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> createBatchScanner(
+      String tableName,
+      Authorizations authorizations,
+      int numQueryThreads,
+      EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter)
+      throws TableNotFoundException {
+    ArgumentChecker.notNull(tableName, authorizations);
+    return new GenericBatchScannerImpl<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE>(
+        instance, credentials, getTableId(tableName), authorizations,
+        numQueryThreads, EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter);
+  }
+
   @Deprecated
   @Override
-  public BatchWriter createBatchWriter(String tableName, long maxMemory, long maxLatency, int maxWriteThreads) throws TableNotFoundException {
-    ArgumentChecker.notNull(tableName);
-    return new BatchWriterImpl(instance, credentials, getTableId(tableName), new BatchWriterConfig().setMaxMemory(maxMemory)
-        .setMaxLatency(maxLatency, TimeUnit.MILLISECONDS).setMaxWriteThreads(maxWriteThreads));
+  public BatchDeleter createBatchDeleter(String tableName,
+      Authorizations authorizations, int numQueryThreads, long maxMemory,
+      long maxLatency, int maxWriteThreads) throws TableNotFoundException {
+    ArgumentChecker.notNull(tableName, authorizations);
+    return new TabletServerBatchDeleter(instance, credentials,
+        getTableId(tableName), authorizations, numQueryThreads,
+        new BatchWriterConfig().setMaxMemory(maxMemory)
+            .setMaxLatency(maxLatency, TimeUnit.MILLISECONDS)
+            .setMaxWriteThreads(maxWriteThreads));
   }
-  
+
   @Override
-  public BatchWriter createBatchWriter(String tableName, BatchWriterConfig config) throws TableNotFoundException {
-    ArgumentChecker.notNull(tableName);
-    return new BatchWriterImpl(instance, credentials, getTableId(tableName), config);
+  public BatchDeleter createBatchDeleter(String tableName,
+      Authorizations authorizations, int numQueryThreads,
+      BatchWriterConfig config) throws TableNotFoundException {
+    ArgumentChecker.notNull(tableName, authorizations);
+    return new TabletServerBatchDeleter(instance, credentials,
+        getTableId(tableName), authorizations, numQueryThreads, config);
   }
-  
+
   @Deprecated
   @Override
-  public MultiTableBatchWriter createMultiTableBatchWriter(long maxMemory, long maxLatency, int maxWriteThreads) {
-    return new MultiTableBatchWriterImpl(instance, credentials, new BatchWriterConfig().setMaxMemory(maxMemory)
-        .setMaxLatency(maxLatency, TimeUnit.MILLISECONDS).setMaxWriteThreads(maxWriteThreads));
+  public BatchWriter createBatchWriter(String tableName, long maxMemory,
+      long maxLatency, int maxWriteThreads) throws TableNotFoundException {
+    ArgumentChecker.notNull(tableName);
+    return new BatchWriterImpl(instance, credentials, getTableId(tableName),
+        new BatchWriterConfig().setMaxMemory(maxMemory)
+            .setMaxLatency(maxLatency, TimeUnit.MILLISECONDS)
+            .setMaxWriteThreads(maxWriteThreads));
   }
-  
+
   @Override
-  public MultiTableBatchWriter createMultiTableBatchWriter(BatchWriterConfig config) {
+  public BatchWriter createBatchWriter(String tableName,
+      BatchWriterConfig config) throws TableNotFoundException {
+    ArgumentChecker.notNull(tableName);
+    return new BatchWriterImpl(instance, credentials, getTableId(tableName),
+        config);
+  }
+
+  @Deprecated
+  @Override
+  public MultiTableBatchWriter createMultiTableBatchWriter(long maxMemory,
+      long maxLatency, int maxWriteThreads) {
+    return new MultiTableBatchWriterImpl(instance, credentials,
+        new BatchWriterConfig().setMaxMemory(maxMemory)
+            .setMaxLatency(maxLatency, TimeUnit.MILLISECONDS)
+            .setMaxWriteThreads(maxWriteThreads));
+  }
+
+  @Override
+  public MultiTableBatchWriter createMultiTableBatchWriter(
+      BatchWriterConfig config) {
     return new MultiTableBatchWriterImpl(instance, credentials, config);
   }
-  
+
   @Override
   public ConditionalWriter createConditionalWriter(String tableName, ConditionalWriterConfig config) throws TableNotFoundException {
     return new ConditionalWriterImpl(instance, credentials, getTableId(tableName), config);
@@ -144,42 +178,44 @@ public class ConnectorImpl extends Connector {
   @Override
   public Scanner createScanner(String tableName, Authorizations authorizations) throws TableNotFoundException {
     ArgumentChecker.notNull(tableName, authorizations);
-    return new ScannerImpl(instance, credentials, getTableId(tableName), authorizations);
+    return new ScannerImpl(instance, credentials, getTableId(tableName),
+        authorizations);
   }
-  
+
   @Override
-  public <T, F, Q> GenericScannerBase<T, F, Q> createGenericScanner(
+  public <T, R, F, Q, VI, TS, V> GenericScanner<T, R, F, Q, VI, TS, V> createGenericScanner(
       String tableName, Authorizations authorizations,
-      EntryConverter<T, F, Q> converter) throws TableNotFoundException {
-    return new GenericScannerImpl<T, F, Q>(instance, credentials,
+      EntryConverter<T, R, F, Q, VI, TS, V> converter)
+      throws TableNotFoundException {
+    return new GenericScannerImpl<T, R, F, Q, VI, TS, V>(instance, credentials,
         getTableId(tableName), authorizations, converter);
   }
-  
+
   @Override
   public String whoami() {
     return credentials.getPrincipal();
   }
-  
+
   @Override
   public synchronized TableOperations tableOperations() {
     if (tableops == null)
       tableops = new TableOperationsImpl(instance, credentials);
     return tableops;
   }
-  
+
   @Override
   public synchronized SecurityOperations securityOperations() {
     if (secops == null)
       secops = new SecurityOperationsImpl(instance, credentials);
-    
+
     return secops;
   }
-  
+
   @Override
   public synchronized InstanceOperations instanceOperations() {
     if (instanceops == null)
       instanceops = new InstanceOperationsImpl(instance, credentials);
-    
+
     return instanceops;
   }
 }

@@ -52,7 +52,7 @@ import org.apache.hadoop.io.Text;
  * Iterators added to this scanner will be run in the client JVM. Separate scan iterators can be run on the server side and client side by adding iterators to
  * the source scanner (which will execute server side) and to the client side scanner (which will execute client side).
  */
-public class ClientSideIteratorScanner extends ScannerOptions implements Scanner {
+public class ClientSideIteratorScanner extends ScannerOptions<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> implements Scanner {
   private int size;
   
   private Range range;
@@ -133,6 +133,7 @@ public class ClientSideIteratorScanner extends ScannerOptions implements Scanner
    *          the source scanner
    */
   public ClientSideIteratorScanner(final Scanner scanner) {
+    super(new ClassicAccumuloEntryConverter());
     smi = new ScannerTranslator(scanner);
     this.range = scanner.getRange();
     this.size = scanner.getBatchSize();

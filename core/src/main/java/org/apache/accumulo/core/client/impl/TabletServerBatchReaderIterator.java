@@ -83,7 +83,7 @@ public class TabletServerBatchReaderIterator implements Iterator<Entry<Key,Value
   private Authorizations authorizations = Authorizations.EMPTY;
   private final int numThreads;
   private final ExecutorService queryThreadPool;
-  private final ScannerOptions options;
+  private final ScannerOptions<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> options;
   
   private ArrayBlockingQueue<List<Entry<Key,Value>>> resultsQueue;
   private Iterator<Entry<Key,Value>> batchIterator;
@@ -141,7 +141,7 @@ public class TabletServerBatchReaderIterator implements Iterator<Entry<Key,Value
     this.authorizations = authorizations;
     this.numThreads = numThreads;
     this.queryThreadPool = queryThreadPool;
-    this.options = new ScannerOptions(scannerOptions);
+    this.options = new ScannerOptions<Entry<Key,Value>, Text, Text, Text, Text, Long, Value>(scannerOptions);
     resultsQueue = new ArrayBlockingQueue<List<Entry<Key,Value>>>(numThreads);
     
     this.locator = new TimeoutTabletLocator(TabletLocator.getLocator(instance, new Text(table)), timeout);
