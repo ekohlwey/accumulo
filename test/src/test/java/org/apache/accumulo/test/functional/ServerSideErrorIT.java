@@ -38,7 +38,7 @@ import org.junit.Test;
 
 public class ServerSideErrorIT extends MacTest {
   
-  @Test
+  @Test(timeout=60*1000)
   public void run() throws Exception {
     Connector c = getConnector();
     c.tableOperations().create("tt");
@@ -79,10 +79,12 @@ public class ServerSideErrorIT extends MacTest {
       for (Entry<Key,Value> entry : bs) {
         entry.getKey();
       }
-      bs.close();
     } catch (Exception e) {
       caught = true;
+    } finally {
+      bs.close();
     }
+    
     if (!caught)
       throw new Exception("batch scan did not fail");
     

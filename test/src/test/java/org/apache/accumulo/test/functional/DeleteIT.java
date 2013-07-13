@@ -18,9 +18,9 @@ package org.apache.accumulo.test.functional;
 
 import static org.junit.Assert.assertEquals;
 
-import org.apache.accumulo.core.cli.BatchWriterOpts;
 import org.apache.accumulo.core.cli.ScannerOpts;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.server.util.Admin;
 import org.apache.accumulo.test.TestIngest;
 import org.apache.accumulo.test.TestRandomDeletes;
@@ -33,19 +33,19 @@ public class DeleteIT extends MacTest {
   public void test() throws Exception {
     Connector c = getConnector();
     c.tableOperations().create("test_ingest");
-    deleteTest(c);
+    deleteTest(c, cluster);
     assertEquals(0, cluster.exec(Admin.class, "stopAll").waitFor());
   }
 
-  public static void deleteTest(Connector c) throws Exception {
+  public static void deleteTest(Connector c, MiniAccumuloCluster cluster) throws Exception {
     VerifyIngest.Opts vopts = new VerifyIngest.Opts();
     TestIngest.Opts opts = new TestIngest.Opts();
     vopts.rows = opts.rows = 1000;
     vopts.cols = opts.cols = 1;
     vopts.random = opts.random = 56;
-    TestIngest.ingest(c, opts, new BatchWriterOpts());
+    TestIngest.ingest(c, opts, BWOPTS);
     assertEquals(0, cluster.exec(TestRandomDeletes.class, "-p", MacTest.PASSWORD, "-i", cluster.getInstanceName(), "-z", cluster.getZooKeepers()).waitFor());
-    TestIngest.ingest(c, opts, new BatchWriterOpts());
+    TestIngest.ingest(c, opts, BWOPTS);
     VerifyIngest.verifyIngest(c, vopts, new ScannerOpts());
   }
   

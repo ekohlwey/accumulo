@@ -204,6 +204,7 @@ import org.apache.accumulo.trace.instrument.Trace;
 import org.apache.accumulo.trace.instrument.thrift.TraceWrap;
 import org.apache.accumulo.trace.thrift.TInfo;
 import org.apache.commons.collections.map.LRUMap;
+import org.apache.hadoop.fs.FSError;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
@@ -227,6 +228,7 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
   private static long gcTimeIncreasedCount;
   
   private static final long MAX_TIME_TO_WAIT_FOR_SCAN_RESULT_MILLIS = 1000;
+  private static final long RECENTLY_SPLIT_MILLIES = 60*1000;
   
   private TabletServerLogger logger;
   
@@ -1550,6 +1552,8 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
             break;
           } catch (IOException ex) {
             log.warn("logging mutations failed, retrying");
+          } catch (FSError ex) { // happens when DFS is localFS
+            log.warn("logging mutations failed, retrying");
           } catch (Throwable t) {
             log.error("Unknown exception logging mutations, counts for mutations in flight not decremented!", t);
             throw new RuntimeException(t);
@@ -1830,6 +1834,16 @@ public class TabletServer extends AbstractMetricsImpl implements org.apache.accu
             Set<KeyExtent> unopenedOverlapping = KeyExtent.findOverlapping(extent, unopenedTablets);
             Set<KeyExtent> openingOverlapping = KeyExtent.findOverlapping(extent, openingTablets);
             Set<KeyExtent> onlineOverlapping = KeyExtent.findOverlapping(extent, onlineTablets);
+            
+            // ignore any tablets that have recently split
+            Iterator<KeyExtent> each = onlineOverlapping.iterator();
+            while (each.hasNext()) {
+              Tablet tablet = onlineTablets.get(each.next());
+              if (System.currentTimeMillis() - tablet.getSplitCreationTime() < RECENTLY_SPLIT_MILLIES) {
+                each.remove();
+              }
+            }
+            
             Set<KeyExtent> all = new HashSet<KeyExtent>();
             all.addAll(unopenedOverlapping);
             all.addAll(openingOverlapping);
