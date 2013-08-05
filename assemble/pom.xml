@@ -26,6 +26,7 @@
   <packaging>pom</packaging>
   <name>Assemblies</name>
   <properties>
+    <accumulo-misc-rpm>rpm-misc</accumulo-misc-rpm>
     <accumulo-top>..</accumulo-top>
   </properties>
   <dependencies>
@@ -190,7 +191,7 @@
               <copyright>Apache License, Version 2.0 and others (see included LICENSE file)</copyright>
               <url>http://accumulo.apache.org</url>
               <group>Utilities</group>
-              <prefix>/opt/accumulo</prefix>
+              <prefix>/usr/lib/accumulo</prefix>
               <defaultDirmode>755</defaultDirmode>
               <defaultFilemode>644</defaultFilemode>
               <defaultUsername>root</defaultUsername>
@@ -216,7 +217,7 @@
                   </requires>
                   <mappings>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}</directory>
+                      <directory>/usr/lib/accumulo</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/CHANGES</location>
@@ -233,7 +234,7 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/docs</directory>
+                      <directory>/usr/lib/accumulo/docs</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/docs</location>
@@ -244,10 +245,10 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/bin</directory>
+                      <directory>/usr/lib/accumulo/bin</directory>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/bin</directory>
+                      <directory>/usr/lib/accumulo/bin</directory>
                       <directoryIncluded>false</directoryIncluded>
                       <filemode>755</filemode>
                       <username>root</username>
@@ -259,7 +260,18 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/proxy</directory>
+                      <directory>/usr/bin</directory>
+                      <sources>
+                        <source>
+                          <location>${accumulo-rpm-misc}</location>
+                          <includes>
+                            <include>accumulo</include>
+                          </includes>
+                        </source>
+                      </sources>
+                    </mapping>
+                    <mapping>
+                      <directory>/usr/lib/accumulo/proxy</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/proxy/README</location>
@@ -270,7 +282,7 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/proxy/examples</directory>
+                      <directory>/usr/lib/accumulo/proxy/examples</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/proxy/examples</location>
@@ -278,7 +290,7 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/proxy/thrift</directory>
+                      <directory>/usr/lib/accumulo/proxy/thrift</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/proxy/src/main/thrift</location>
@@ -297,7 +309,7 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/examples/simple</directory>
+                      <directory>/usr/lib/accumulo/examples/simple</directory>
                       <recurseDirectories>true</recurseDirectories>
                       <sources>
                         <source>
@@ -309,7 +321,16 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/conf</directory>
+                      <directory>/etc/accumulo</directory>
+                      <sources>
+                        <softlinkSource>
+                          <location>/usr/lib/accumulo/conf</location>
+                          <destination>conf</destination>
+                        </softlinkSource>
+                      </sources>
+                    </mapping>
+                    <mapping>
+                      <directory>/usr/lib/accumulo/conf</directory>
                       <recurseDirectories>true</recurseDirectories>
                       <sources>
                         <source>
@@ -323,7 +344,23 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/lib</directory>
+                      <directory>/var/log</directory>
+                      <sources>
+                        <softlinkSource>
+                          <location>/usr/lib/accumulo/logs</location>
+                          <destination>accumulo</destination>
+                        </softlinkSource>
+                      </sources>
+                    </mapping>
+                    <mapping>
+                      <directory>/usr/lib/accumulo/logs</directory>
+                      <defaultFilemode>0700</defaultFilemode>
+                      <defaultUsername>accumulo</defaultUsername>
+                      <defaultGroupname>accumulo</defaultGroupname>
+                      <directoryIncluded>true</directoryIncluded>
+                    </mapping>
+                    <mapping>
+                      <directory>/usr/lib/accumulo/lib</directory>
                       <recurseDirectories>true</recurseDirectories>
                       <sources>
                         <source>
@@ -335,7 +372,7 @@
                       </sources>
                     </mapping>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/lib/ext</directory>
+                      <directory>/usr/lib/accumulo/lib/ext</directory>
                     </mapping>
                   </mappings>
                 </configuration>
@@ -358,7 +395,7 @@
                   </requires>
                   <mappings>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/lib/native/map</directory>
+                      <directory>/usr/lib/accumulo/lib/native/map</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/lib/native/map</location>
@@ -389,7 +426,7 @@
                   </requires>
                   <mappings>
                     <mapping>
-                      <directory>/opt/accumulo/accumulo-${project.version}/test</directory>
+                      <directory>/usr/lib/accumulo/test</directory>
                       <sources>
                         <source>
                           <location>${accumulo-top}/test</location>
@@ -432,7 +469,7 @@
                 </goals>
                 <phase>package</phase>
                 <configuration>
-                  <deb>${project.build.directory}/accumulo-${project.version}.deb</deb>
+                  <deb>${project.build.directory}/accumulo.deb</deb>
                   <classifier>bin</classifier>
                   <controlDir>assemble/deb/accumulo</controlDir>
                   <installDir>/usr/lib/accumulo</installDir>
