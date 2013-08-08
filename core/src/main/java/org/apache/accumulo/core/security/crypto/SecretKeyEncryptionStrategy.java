@@ -19,11 +19,10 @@ package org.apache.accumulo.core.security.crypto;
 /**
  * 
  */
-public interface SecretKeyEncryptionStrategy {
+public interface SecretKeyEncryptionStrategy {  
   
-  public SecretKeyEncryptionStrategyContext encryptSecretKey(SecretKeyEncryptionStrategyContext context);
-  public SecretKeyEncryptionStrategyContext decryptSecretKey(SecretKeyEncryptionStrategyContext context);
-  public SecretKeyEncryptionStrategyContext getNewContext();
+  public CryptoModuleParameters encryptSecretKey(CryptoModuleParameters params);
+  public CryptoModuleParameters decryptSecretKey(CryptoModuleParameters params);
   
   
 }

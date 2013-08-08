@@ -21,8 +21,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.accumulo.core.cli.BatchWriterOpts;
-import org.apache.accumulo.core.cli.ScannerOpts;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
@@ -57,9 +55,9 @@ public class ChaoticBlancerIT extends MacTest {
     TestIngest.Opts opts = new TestIngest.Opts();
     VerifyIngest.Opts vopts = new VerifyIngest.Opts();
     vopts.rows = opts.rows = 200000;
-    TestIngest.ingest(c, opts, new BatchWriterOpts());
+    TestIngest.ingest(c, opts, BWOPTS);
     c.tableOperations().flush("test_ingest", null, null, true);
-    VerifyIngest.verifyIngest(c, vopts, new ScannerOpts());
+    VerifyIngest.verifyIngest(c, vopts, SOPTS);
   }
   
 }

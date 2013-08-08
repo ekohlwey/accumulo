@@ -19,7 +19,6 @@ package org.apache.accumulo.test.functional;
 import java.util.Collections;
 
 import org.apache.accumulo.core.cli.ClientOpts.Password;
-import org.apache.accumulo.core.cli.ScannerOpts;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.core.util.CachedConfiguration;
@@ -57,9 +56,9 @@ public class BulkSplitOptimizationIT extends MacTest {
     c.tableOperations().setProperty(TABLE_NAME, Property.TABLE_SPLIT_THRESHOLD.getKey(), "1G");
     
     FileSystem fs = FileSystem.get(CachedConfiguration.getInstance());
-    FunctionalTestUtils.createRFiles(c, fs, "/tmp/testmf", ROWS, SPLITS, 8);
+    FunctionalTestUtils.createRFiles(c, fs, "tmp/testmf", ROWS, SPLITS, 8);
     
-    FunctionalTestUtils.bulkImport(c, fs, TABLE_NAME, "/tmp/testmf");
+    FunctionalTestUtils.bulkImport(c, fs, TABLE_NAME, "tmp/testmf");
     
     FunctionalTestUtils.checkSplits(c, TABLE_NAME, 0, 0);
     FunctionalTestUtils.checkRFiles(c, TABLE_NAME, 1, 1, 100, 100);
@@ -83,7 +82,7 @@ public class BulkSplitOptimizationIT extends MacTest {
     opts.startRow = 0;
     opts.cols = 1;
     opts.password = new Password(PASSWORD);
-    VerifyIngest.verifyIngest(c, opts, new ScannerOpts());
+    VerifyIngest.verifyIngest(c, opts, SOPTS);
     
     // ensure each tablet does not have all map files
     FunctionalTestUtils.checkRFiles(c, TABLE_NAME, 50, 100, 1, 4);
