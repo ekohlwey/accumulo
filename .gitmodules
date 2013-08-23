@@ -1,0 +1,3 @@
+[submodule "accumulo-hive-storage-manager"]
+	path = accumulo-hive-storage-manager
+	url = https://github.com/ekohlwey/accumulo-hive-storage-manager
