@@ -64,7 +64,7 @@ public class ScannerOptions<T, R, F, Q, VI, TS, V> implements GenericScannerBase
     this.converter = so.getConverter();
   }
   
-  private EntryConverter<T, R, F, Q, VI, TS, V> getConverter() {
+  protected EntryConverter<T, R, F, Q, VI, TS, V> getConverter() {
     return converter;
   }
   

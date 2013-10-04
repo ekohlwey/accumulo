@@ -19,9 +19,15 @@ package org.apache.accumulo.core.client.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.util.Map.Entry;
+
+import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.IteratorSetting;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.DebugIterator;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
+import org.apache.hadoop.io.Text;
 import org.junit.Test;
 
 /**
@@ -36,7 +42,8 @@ public class ScannerOptionsTest {
    */
   @Test
   public void testAddRemoveIterator() throws Throwable {
-    ScannerOptions options = new ScannerOptions();
+    ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> options = 
+        new ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value>(new ClassicAccumuloEntryConverter());
     options.addScanIterator(new IteratorSetting(1, "NAME", WholeRowIterator.class));
     assertEquals(1, options.serverSideIteratorList.size());
     options.removeScanIterator("NAME");
@@ -45,7 +52,8 @@ public class ScannerOptionsTest {
   
   @Test
   public void testIteratorConflict() {
-    ScannerOptions options = new ScannerOptions();
+    ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> options = 
+        new ScannerOptions(new ClassicAccumuloEntryConverter());
     options.addScanIterator(new IteratorSetting(1, "NAME", DebugIterator.class));
     try {
       options.addScanIterator(new IteratorSetting(2, "NAME", DebugIterator.class));

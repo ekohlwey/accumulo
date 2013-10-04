@@ -112,6 +112,6 @@ public class GenericTabletServerBatchScannerImpl<TYPE, ROW, FAMILY, QUALIFIER, V
       throw new IllegalStateException("batch reader closed");
     }
     
-    return new TabletServerBatchReaderIterator(instance, credentials, table, authorizations, ranges, numThreads, queryThreadPool, this, timeOut);
+    return new GenericBatchIterator(instance, credentials, table, authorizations, ranges, numThreads, queryThreadPool, this, timeOut, getConverter());
   }
 }

@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.accumulo.core.Constants;
 import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.Instance;
+import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
@@ -41,7 +42,7 @@ import org.apache.hadoop.io.Text;
  * anchors whose timestamps fall within ten days of the current time."
  * 
  */
-public class ScannerImpl extends GenericScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value>   {
+public class ScannerImpl extends GenericScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> implements Scanner   {
   
   // keep a list of columns over which to scan
   // keep track of the last thing read
