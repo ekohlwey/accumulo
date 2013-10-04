@@ -101,16 +101,14 @@ public class ConnectorImpl extends Connector {
   }
 
   @Override
-  public <TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> GenericBatchScanner<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> createBatchScanner(
-      String tableName,
-      Authorizations authorizations,
-      int numQueryThreads,
-      EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter)
+  public <T, R, F, Q, VI, TS, V> GenericBatchScanner<T, R, F, Q, VI, TS, V> createGenericBatchScanner(
+      String tableName, Authorizations authorizations, int numQueryThreads,
+      EntryConverter<T, R, F, Q, VI, TS, V> converter)
       throws TableNotFoundException {
     ArgumentChecker.notNull(tableName, authorizations);
-    return new GenericBatchScannerImpl<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE>(
+    return new GenericTabletServerBatchScannerImpl<T, R, F, Q, VI, TS, V>(
         instance, credentials, getTableId(tableName), authorizations,
-        numQueryThreads, EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter);
+        numQueryThreads, converter);
   }
 
   @Deprecated

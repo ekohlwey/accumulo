@@ -16,24 +16,24 @@
  */
 package org.apache.accumulo.core.client.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
 
+import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
+<<<<<<< HEAD
 import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.util.ArgumentChecker;
 import org.apache.accumulo.core.util.SimpleThreadPool;
+=======
+import org.apache.accumulo.core.security.thrift.TCredentials;
+>>>>>>> More work on generic supertypes.
 import org.apache.hadoop.io.Text;
-import org.apache.log4j.Logger;
 
+<<<<<<< HEAD
 public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> {
   public static final Logger log = Logger.getLogger(TabletServerBatchReader.class);
   
@@ -55,62 +55,12 @@ public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl
   }
   
   private final int batchReaderInstance = getNextBatchReaderInstance();
+=======
+public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> implements BatchScanner {
+>>>>>>> More work on generic supertypes.
   
   public TabletServerBatchReader(Instance instance, Credentials credentials, String table, Authorizations authorizations, int numQueryThreads) {
     super(instance, credentials, table, authorizations, numQueryThreads, new ClassicAccumuloEntryConverter());
-    ArgumentChecker.notNull(instance, credentials, table, authorizations);
-    this.instance = instance;
-    this.credentials = credentials;
-    this.authorizations = authorizations;
-    this.table = table;
-    this.numThreads = numQueryThreads;
-    
-    queryThreadPool = new SimpleThreadPool(numQueryThreads, "batch scanner " + batchReaderInstance + "-");
-    
-    ranges = null;
-    ex = new Throwable();
   }
   
-  @Override
-  public void close() {
-    queryThreadPool.shutdownNow();
-  }
-  
-  /**
-   * Warning: do not rely upon finalize to close this class. Finalize is not guaranteed to be called.
-   */
-  @Override
-  protected void finalize() {
-    if (!queryThreadPool.isShutdown()) {
-      log.warn(TabletServerBatchReader.class.getSimpleName() + " not shutdown; did you forget to call close()?", ex);
-      close();
-    }
-  }
-  
-  @Override
-  public void setRanges(Collection<Range> ranges) {
-    if (ranges == null || ranges.size() == 0) {
-      throw new IllegalArgumentException("ranges must be non null and contain at least 1 range");
-    }
-    
-    if (queryThreadPool.isShutdown()) {
-      throw new IllegalStateException("batch reader closed");
-    }
-    
-    this.ranges = new ArrayList<Range>(ranges);
-    
-  }
-  
-  @Override
-  public Iterator<Entry<Key,Value>> iterator() {
-    if (ranges == null) {
-      throw new IllegalStateException("ranges not set");
-    }
-    
-    if (queryThreadPool.isShutdown()) {
-      throw new IllegalStateException("batch reader closed");
-    }
-    
-    return new TabletServerBatchReaderIterator(instance, credentials, table, authorizations, ranges, numThreads, queryThreadPool, this, timeOut);
-  }
 }

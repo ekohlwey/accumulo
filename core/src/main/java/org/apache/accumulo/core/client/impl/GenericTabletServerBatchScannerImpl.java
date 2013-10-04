@@ -19,17 +19,14 @@ package org.apache.accumulo.core.client.impl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.EntryConverter;
 import org.apache.accumulo.core.client.GenericBatchScanner;
 import org.apache.accumulo.core.client.Instance;
-import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
-import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
+import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.security.thrift.TCredentials;
 import org.apache.accumulo.core.util.ArgumentChecker;
 import org.apache.accumulo.core.util.SimpleThreadPool;
@@ -37,27 +34,27 @@ import org.apache.log4j.Logger;
 
 public class GenericTabletServerBatchScannerImpl<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> extends ScannerOptions<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> implements GenericBatchScanner<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> {
   public static final Logger log = Logger.getLogger(GenericTabletServerBatchScannerImpl.class);
-  
+
   private String table;
   private int numThreads;
   private ExecutorService queryThreadPool;
-  
+
   private Instance instance;
   private ArrayList<Range> ranges;
-  
-  private TCredentials credentials;
+
+  private Credentials credentials;
   private Authorizations authorizations = Authorizations.EMPTY;
   private Throwable ex = null;
-  
+
   private static int nextBatchReaderInstance = 1;
-  
+
   private static synchronized int getNextBatchReaderInstance() {
     return nextBatchReaderInstance++;
   }
-  
+
   private final int batchReaderInstance = getNextBatchReaderInstance();
   
-  public GenericTabletServerBatchScannerImpl(Instance instance, TCredentials credentials, String table, Authorizations authorizations, int numQueryThreads, EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter) {
+  public GenericTabletServerBatchScannerImpl(Instance instance, Credentials credentials, String table, Authorizations authorizations, int numQueryThreads, EntryConverter<TYPE, ROW, FAMILY, QUALIFIER, VISIBILITY, TIMESTAMP, VALUE> converter) {
     super(converter);
     ArgumentChecker.notNull(instance, credentials, table, authorizations);
     this.instance = instance;
@@ -112,6 +109,6 @@ public class GenericTabletServerBatchScannerImpl<TYPE, ROW, FAMILY, QUALIFIER, V
       throw new IllegalStateException("batch reader closed");
     }
     
-    return new TabletServerBatchReaderIterator(instance, credentials, table, authorizations, ranges, numThreads, queryThreadPool, this, timeOut);
+    return new GenericBatchIterator(instance, credentials, table, authorizations, ranges, numThreads, queryThreadPool, this, timeOut, getConverter());
   }
 }

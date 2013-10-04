@@ -216,7 +216,7 @@ public abstract class Connector {
       EntryConverter<T, R, F, Q, VI, TS, V> converter) throws TableNotFoundException;
 
   public abstract <T, R, F, Q, VI, TS, V> GenericBatchScanner<T, R, F, Q, VI, TS, V> createGenericBatchScanner(
-      String tableName, Authorizations authorizations,
+      String tableName, Authorizations authorizations, int numQueryThreads,
       EntryConverter<T, R, F, Q, VI, TS, V> converter) throws TableNotFoundException;
   
   /**
@@ -270,4 +270,5 @@ public abstract class Connector {
    * @return an object to modify instance configuration
    */
   public abstract InstanceOperations instanceOperations();
+
 }

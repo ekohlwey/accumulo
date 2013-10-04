@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.impl.ScannerOptions;
 import org.apache.accumulo.core.conf.AccumuloConfiguration;
@@ -60,8 +61,9 @@ import org.apache.accumulo.server.util.MetadataTableUtil.LogEntry;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.Text;
 
-public class OfflineMetadataScanner extends ScannerOptions implements Scanner {
+public class OfflineMetadataScanner extends ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> implements Scanner {
   
   private Set<String> allFiles = new HashSet<String>();
   private Range range = new Range();
@@ -124,7 +126,7 @@ public class OfflineMetadataScanner extends ScannerOptions implements Scanner {
   }
   
   public OfflineMetadataScanner(AccumuloConfiguration conf, VolumeManager fs) throws IOException {
-    super();
+    super(new ClassicAccumuloEntryConverter());
     this.fs = fs;
     this.conf = conf;
     List<LogEntry> rwal;

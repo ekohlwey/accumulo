@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 
 import org.apache.accumulo.core.Constants;
 import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.RowIterator;
@@ -115,11 +116,11 @@ class OfflineIterator implements Iterator<Entry<Key,Value>> {
   private String tableId;
   private Authorizations authorizations;
   private Instance instance;
-  private ScannerOptions options;
+  private ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> options;
   private ArrayList<SortedKeyValueIterator<Key,Value>> readers;
   
-  public OfflineIterator(ScannerOptions options, Instance instance, Credentials credentials, Authorizations authorizations, Text table, Range range) {
-    this.options = new ScannerOptions(options);
+  public OfflineIterator(ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> options, Instance instance, Credentials credentials, Authorizations authorizations, Text table, Range range) {
+    this.options = new ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value>(options);
     this.instance = instance;
     this.range = range;
     
@@ -343,7 +344,7 @@ class OfflineIterator implements Iterator<Entry<Key,Value>> {
 /**
  * 
  */
-public class OfflineScanner extends ScannerOptions implements Scanner {
+public class OfflineScanner extends ScannerOptions<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> implements Scanner {
   
   private int batchSize;
   private int timeOut;
@@ -355,6 +356,7 @@ public class OfflineScanner extends ScannerOptions implements Scanner {
   private Text tableId;
   
   public OfflineScanner(Instance instance, Credentials credentials, String tableId, Authorizations authorizations) {
+    super(new ClassicAccumuloEntryConverter());
     ArgumentChecker.notNull(instance, credentials, tableId, authorizations);
     this.instance = instance;
     this.credentials = credentials;
