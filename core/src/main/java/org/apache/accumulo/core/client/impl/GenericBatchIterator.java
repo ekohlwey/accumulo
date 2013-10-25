@@ -58,7 +58,7 @@ import org.apache.accumulo.core.data.thrift.TKeyValue;
 import org.apache.accumulo.core.data.thrift.TRange;
 import org.apache.accumulo.core.master.state.tables.TableState;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.core.security.thrift.TCredentials;
+import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.tabletserver.thrift.NoSuchScanIDException;
 import org.apache.accumulo.core.tabletserver.thrift.TabletClientService;
 import org.apache.accumulo.core.util.ByteBufferUtil;
@@ -80,18 +80,20 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
   private static final Logger log = Logger.getLogger(GenericBatchIterator.class);
   
   private final EntryConverter<TYPE, ?, ?, ?, ?, ?, ?> converter;
+
+  
   private final Instance instance;
-  private final TCredentials credentials;
+  private final Credentials credentials;
   private final String table;
   private Authorizations authorizations = Authorizations.EMPTY;
   private final int numThreads;
   private final ExecutorService queryThreadPool;
-  private final ScannerOptions<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> options;
+  private final ScannerOptions<TYPE, ?,?,?,?,?,?> options;
   
-  private ArrayBlockingQueue<List<Entry<Key,Value>>> resultsQueue;
-  private Iterator<Entry<Key,Value>> batchIterator;
-  private List<Entry<Key,Value>> batch;
-  private static final List<Entry<Key,Value>> LAST_BATCH = new ArrayList<Map.Entry<Key,Value>>();
+  private ArrayBlockingQueue<List<TYPE>> resultsQueue;
+  private Iterator<TYPE> batchIterator;
+  private List<TYPE> batch;
+  private final List<TYPE> lastBatch = new ArrayList<TYPE>();
   private final Object nextLock = new Object();
   
   private long failSleepTime = 100;
@@ -104,8 +106,8 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
   
   private TabletLocator locator;
   
-  public interface ResultReceiver {
-    void receive(List<Entry<Key,Value>> entries);
+  public interface ResultReceiver<TYPE> {
+    void receive(List<TYPE> entries);
   }
   
   private static class MyEntry implements Entry<Key,Value> {
@@ -135,8 +137,9 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
     
   }
   
-  public GenericBatchIterator(Instance instance, TCredentials credentials, String table, Authorizations authorizations, ArrayList<Range> ranges,
-      int numThreads, ExecutorService queryThreadPool, ScannerOptions scannerOptions, long timeout, EntryConverter<TYPE, ?, ?, ?, ?, ?, ?> converter) {
+  public GenericBatchIterator(Instance instance, Credentials credentials, String table, Authorizations authorizations, ArrayList<Range> ranges,
+      int numThreads, ExecutorService queryThreadPool, ScannerOptions scannerOptions, long timeout,
+      EntryConverter<TYPE, ?, ?, ?, ?, ?, ?> converter) {
     this.converter = converter;
     this.instance = instance;
     this.credentials = credentials;
@@ -144,8 +147,8 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
     this.authorizations = authorizations;
     this.numThreads = numThreads;
     this.queryThreadPool = queryThreadPool;
-    this.options = new ScannerOptions<Entry<Key,Value>, Text, Text, Text, Text, Long, Value>(scannerOptions);
-    resultsQueue = new ArrayBlockingQueue<List<Entry<Key,Value>>>(numThreads);
+    this.options = new ScannerOptions(scannerOptions);
+    resultsQueue = new ArrayBlockingQueue<List<TYPE>>(numThreads);
     
     this.locator = new TimeoutTabletLocator(TabletLocator.getLocator(instance, new Text(table)), timeout);
     
@@ -156,16 +159,16 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
     if (options.fetchedColumns.size() > 0) {
       ArrayList<Range> ranges2 = new ArrayList<Range>(ranges.size());
       for (Range range : ranges) {
-        ranges2.add(range.bound(options.fetchedColumns.first(), options.fetchedColumns.last()));
+        ranges2.add(range.bound((Column)options.fetchedColumns.first(), (Column)options.fetchedColumns.last()));
       }
       
       ranges = ranges2;
     }
     
-    ResultReceiver rr = new ResultReceiver() {
+    ResultReceiver<TYPE> rr = new ResultReceiver<TYPE>() {
       
       @Override
-      public void receive(List<Entry<Key,Value>> entries) {
+      public void receive(List<TYPE> entries) {
         try {
           resultsQueue.put(entries);
         } catch (InterruptedException e) {
@@ -193,7 +196,7 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
   @Override
   public boolean hasNext() {
     synchronized (nextLock) {
-      if (batch == LAST_BATCH)
+      if (batch == lastBatch)
         return false;
       
       if (batch != null && batchIterator.hasNext())
@@ -215,7 +218,7 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
           throw new RuntimeException("scanner closed");
         
         batchIterator = batch.iterator();
-        return batch != LAST_BATCH;
+        return batch != lastBatch;
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
@@ -226,13 +229,10 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
   public TYPE next() {
     // if there's one waiting, or hasNext() can get one, return it
     synchronized (nextLock) {
-      if (hasNext()){
-        Entry<Key,Value> nextKV = batchIterator.next();
-        Key key = nextKV.getKey();
-        return converter.getEntry(key.getRowData(), key.getColumnFamilyData(), key.getColumnQualifierData(), key.getColumnVisibilityData(), key.getTimestamp(), new ArrayByteSequence(nextKV.getValue().get()));
-      } else {
+      if (hasNext())
+        return batchIterator.next();
+      else
         throw new NoSuchElementException();
-      }
     }
   }
   
@@ -260,7 +260,7 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
     while (true) {
       
       binnedRanges.clear();
-      List<Range> failures = tabletLocator.binRanges(ranges, binnedRanges, credentials);
+      List<Range> failures = tabletLocator.binRanges(credentials, ranges, binnedRanges);
       
       if (failures.size() > 0) {
         // tried to only do table state checks when failures.size() == ranges.size(), however this did
@@ -367,8 +367,8 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
           timeoutTracker = new TimeoutTracker(tsLocation, timedoutServers, timeout);
           timeoutTrackers.put(tsLocation, timeoutTracker);
         }
-        doLookup(tsLocation, tabletsRanges, tsFailures, unscanned, receiver, columns, credentials, options, authorizations, instance.getConfiguration(),
-            timeoutTracker);
+        doLookup(instance, credentials, tsLocation, tabletsRanges, tsFailures, unscanned, receiver, columns, options, authorizations,
+            instance.getConfiguration(), timeoutTracker);
         if (tsFailures.size() > 0) {
           locator.invalidateCache(tsFailures.keySet());
           synchronized (failures) {
@@ -425,22 +425,22 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
             
             if (fatalException != null) {
               // we are finished with this batch query
-              if (!resultsQueue.offer(LAST_BATCH)) {
+              if (!resultsQueue.offer(lastBatch)) {
                 log.debug("Could not add to result queue after seeing fatalException in processFailures", fatalException);
               }
             }
           } else {
             // we are finished with this batch query
             if (fatalException != null) {
-              if (!resultsQueue.offer(LAST_BATCH)) {
+              if (!resultsQueue.offer(lastBatch)) {
                 log.debug("Could not add to result queue after seeing fatalException", fatalException);
               }
             } else {
               try {
-                resultsQueue.put(LAST_BATCH);
+                resultsQueue.put(lastBatch);
               } catch (InterruptedException e) {
                 fatalException = e;
-                if (!resultsQueue.offer(LAST_BATCH)) {
+                if (!resultsQueue.offer(lastBatch)) {
                   log.debug("Could not add to result queue after seeing fatalException", fatalException);
                 }
               }
@@ -610,14 +610,15 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
     }
   }
   
-  public static void doLookup(String server, Map<KeyExtent,List<Range>> requested, Map<KeyExtent,List<Range>> failures, Map<KeyExtent,List<Range>> unscanned,
-      ResultReceiver receiver, List<Column> columns, TCredentials credentials, ScannerOptions options, Authorizations authorizations, AccumuloConfiguration conf)
-      throws IOException, AccumuloSecurityException, AccumuloServerException {
-    doLookup(server, requested, failures, unscanned, receiver, columns, credentials, options, authorizations, conf, new TimeoutTracker(Long.MAX_VALUE));
+  public static void doLookup(Instance instance, Credentials credentials, String server, Map<KeyExtent,List<Range>> requested,
+      Map<KeyExtent,List<Range>> failures, Map<KeyExtent,List<Range>> unscanned, ResultReceiver receiver, List<Column> columns, ScannerOptions options,
+      Authorizations authorizations, AccumuloConfiguration conf) throws IOException, AccumuloSecurityException, AccumuloServerException {
+    doLookup(instance, credentials, server, requested, failures, unscanned, receiver, columns, options, authorizations, conf,
+        new TimeoutTracker(Long.MAX_VALUE));
   }
   
-  static void doLookup(String server, Map<KeyExtent,List<Range>> requested, Map<KeyExtent,List<Range>> failures, Map<KeyExtent,List<Range>> unscanned,
-      ResultReceiver receiver, List<Column> columns, TCredentials credentials, ScannerOptions options, Authorizations authorizations,
+  static void doLookup(Instance instance, Credentials credentials, String server, Map<KeyExtent,List<Range>> requested, Map<KeyExtent,List<Range>> failures,
+      Map<KeyExtent,List<Range>> unscanned, ResultReceiver receiver, List<Column> columns, ScannerOptions options, Authorizations authorizations,
       AccumuloConfiguration conf, TimeoutTracker timeoutTracker) throws IOException, AccumuloSecurityException, AccumuloServerException {
     
     if (requested.size() == 0) {
@@ -652,8 +653,9 @@ public class GenericBatchIterator<TYPE> implements Iterator<TYPE> {
         
         Map<TKeyExtent,List<TRange>> thriftTabletRanges = Translator.translate(requested, Translator.KET, new Translator.ListTranslator<Range,TRange>(
             Translator.RT));
-        InitialMultiScan imsr = client.startMultiScan(Tracer.traceInfo(), credentials, thriftTabletRanges, Translator.translate(columns, Translator.CT),
-            options.serverSideIteratorList, options.serverSideIteratorOptions, ByteBufferUtil.toByteBuffers(authorizations.getAuthorizations()), waitForWrites);
+        InitialMultiScan imsr = client.startMultiScan(Tracer.traceInfo(), credentials.toThrift(instance), thriftTabletRanges,
+            Translator.translate(columns, Translator.CT), options.serverSideIteratorList, options.serverSideIteratorOptions,
+            ByteBufferUtil.toByteBuffers(authorizations.getAuthorizations()), waitForWrites);
         if (waitForWrites)
           ThriftScanner.serversWaitedForWrites.get(ttype).add(server);
         

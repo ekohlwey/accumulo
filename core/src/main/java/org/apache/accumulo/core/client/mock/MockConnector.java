@@ -26,6 +26,9 @@ import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.ConditionalWriter;
 import org.apache.accumulo.core.client.ConditionalWriterConfig;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.EntryConverter;
+import org.apache.accumulo.core.client.GenericBatchScanner;
+import org.apache.accumulo.core.client.GenericScanner;
 import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.MultiTableBatchWriter;
 import org.apache.accumulo.core.client.Scanner;
@@ -138,6 +141,24 @@ public class MockConnector extends Connector {
   
   @Override
   public ConditionalWriter createConditionalWriter(String tableName, ConditionalWriterConfig config) throws TableNotFoundException {
+    // TODO add implementation
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public <T, R, F, Q, VI, TS, V> GenericScanner<T, R, F, Q, VI, TS, V> createGenericScanner(
+      String tableName, Authorizations authorizations,
+      EntryConverter<T, R, F, Q, VI, TS, V> converter)
+      throws TableNotFoundException {
+    // TODO add implementation
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public <T, R, F, Q, VI, TS, V> GenericBatchScanner<T, R, F, Q, VI, TS, V> createGenericBatchScanner(
+      String tableName, Authorizations authorizations, int numQueryThreads,
+      EntryConverter<T, R, F, Q, VI, TS, V> converter)
+      throws TableNotFoundException {
     // TODO add implementation
     throw new UnsupportedOperationException();
   }

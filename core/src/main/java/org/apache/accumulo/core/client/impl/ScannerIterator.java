@@ -49,7 +49,7 @@ public class ScannerIterator<T> implements Iterator<T> {
   
   // scanner options
   private Text tableId;
-  private int timeOut;
+  private long timeOut;
   
   // scanner state
   private Iterator<KeyValue> iter;
@@ -123,8 +123,8 @@ public class ScannerIterator<T> implements Iterator<T> {
   }
   
   @SuppressWarnings({ "rawtypes", "unchecked" })
-  ScannerIterator(Instance instance, Credentials credentials, Text table, Authorizations authorizations, Range range, int size, int timeOut,
-      GenericScannerImpl<T, ?, ?,?,?,?,?> options, boolean isolated, EntryConverter<T, ?, ?,?,?,?,?> converter) {
+  ScannerIterator(Instance instance, Credentials credentials, Text table, Authorizations authorizations, Range range, int size, long timeOut,
+      GenericScannerImpl options, boolean isolated, EntryConverter converter) {
     this.converter = converter;
     this.instance = instance;
     this.tableId = new Text(table);

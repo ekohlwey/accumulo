@@ -189,7 +189,7 @@ public class ThriftScanner {
     
   }
   
-  public static List<KeyValue> scan(Instance instance, Credentials credentials, ScanState scanState, int timeOut, AccumuloConfiguration conf)
+  public static List<KeyValue> scan(Instance instance, Credentials credentials, ScanState scanState, long timeOut, AccumuloConfiguration conf)
       throws ScanTimedOutException, AccumuloException, AccumuloSecurityException, TableNotFoundException {
     TabletLocation loc = null;
     

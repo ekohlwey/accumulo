@@ -24,40 +24,11 @@ import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.Authorizations;
-<<<<<<< HEAD
 import org.apache.accumulo.core.security.Credentials;
-import org.apache.accumulo.core.util.ArgumentChecker;
-import org.apache.accumulo.core.util.SimpleThreadPool;
-=======
-import org.apache.accumulo.core.security.thrift.TCredentials;
->>>>>>> More work on generic supertypes.
 import org.apache.hadoop.io.Text;
 
-<<<<<<< HEAD
-public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> {
-  public static final Logger log = Logger.getLogger(TabletServerBatchReader.class);
-  
-  private String table;
-  private int numThreads;
-  private ExecutorService queryThreadPool;
-  
-  private Instance instance;
-  private ArrayList<Range> ranges;
-  
-  private Credentials credentials;
-  private Authorizations authorizations = Authorizations.EMPTY;
-  private Throwable ex = null;
-  
-  private static int nextBatchReaderInstance = 1;
-  
-  private static synchronized int getNextBatchReaderInstance() {
-    return nextBatchReaderInstance++;
-  }
-  
-  private final int batchReaderInstance = getNextBatchReaderInstance();
-=======
+
 public class TabletServerBatchReader extends GenericTabletServerBatchScannerImpl<Entry<Key,Value>, Text, Text, Text, Text, Long, Value> implements BatchScanner {
->>>>>>> More work on generic supertypes.
   
   public TabletServerBatchReader(Instance instance, Credentials credentials, String table, Authorizations authorizations, int numQueryThreads) {
     super(instance, credentials, table, authorizations, numQueryThreads, new ClassicAccumuloEntryConverter());

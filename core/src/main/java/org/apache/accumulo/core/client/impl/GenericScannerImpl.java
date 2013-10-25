@@ -10,7 +10,7 @@ import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.security.Authorizations;
-import org.apache.accumulo.core.security.thrift.TCredentials;
+import org.apache.accumulo.core.security.Credentials;
 import org.apache.accumulo.core.util.ArgumentChecker;
 import org.apache.hadoop.io.Text;
 
@@ -22,7 +22,7 @@ public class GenericScannerImpl<T, R, F, Q, VI, TS, V> extends ScannerOptions<T,
   // and just query for the next highest row from the tablet server
   
   private Instance instance;
-  private TCredentials credentials;
+  private Credentials credentials;
   private Authorizations authorizations;
   private Text table;
   
@@ -32,7 +32,7 @@ public class GenericScannerImpl<T, R, F, Q, VI, TS, V> extends ScannerOptions<T,
   private boolean isolated = false;
   private EntryConverter<T, R, F, Q, VI, TS, V> converter;
   
-  public GenericScannerImpl(Instance instance, TCredentials credentials,
+  public GenericScannerImpl(Instance instance, Credentials credentials,
       String table, Authorizations authorizations,
       EntryConverter<T, R, F, Q, VI, TS, V> entryConverter) {
     super(entryConverter);

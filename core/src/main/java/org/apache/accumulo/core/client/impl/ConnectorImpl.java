@@ -24,6 +24,7 @@ import org.apache.accumulo.core.client.BatchDeleter;
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.BatchWriterConfig;
+import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.client.ConditionalWriter;
 import org.apache.accumulo.core.client.ConditionalWriterConfig;
 import org.apache.accumulo.core.client.Connector;
@@ -186,7 +187,7 @@ public class ConnectorImpl extends Connector {
       EntryConverter<T, R, F, Q, VI, TS, V> converter)
       throws TableNotFoundException {
     return new GenericScannerImpl<T, R, F, Q, VI, TS, V>(instance, credentials,
-        getTableId(tableName), authorizations, converter);
+        getTableId(tableName), authorizations, converter, new ClassicAccumuloEntryConverter());
   }
 
   @Override
