@@ -168,6 +168,12 @@ public class ConnectorImpl extends Connector {
       BatchWriterConfig config) {
     return new MultiTableBatchWriterImpl(instance, credentials, config);
   }
+  
+  @Override
+  public MultiTableBatchWriter createGenericMultiTableBatchWriter(EntryConverter<T, R, F, Q, VI, TS, V> converter,
+      BatchWriterConfig config) {
+    return new GenericMultiTableBatchWriterImpl(instance, credentials, config);
+  }
 
   @Override
   public ConditionalWriter createConditionalWriter(String tableName, ConditionalWriterConfig config) throws TableNotFoundException {
@@ -187,7 +193,7 @@ public class ConnectorImpl extends Connector {
       EntryConverter<T, R, F, Q, VI, TS, V> converter)
       throws TableNotFoundException {
     return new GenericScannerImpl<T, R, F, Q, VI, TS, V>(instance, credentials,
-        getTableId(tableName), authorizations, converter, new ClassicAccumuloEntryConverter());
+        getTableId(tableName), authorizations, converter);
   }
 
   @Override

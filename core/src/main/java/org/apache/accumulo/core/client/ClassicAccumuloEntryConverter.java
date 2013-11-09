@@ -11,7 +11,7 @@ import org.apache.accumulo.core.data.KeyValue;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 
-public class ClassicAccumuloEntryConverter implements
+public final class ClassicAccumuloEntryConverter implements
     EntryConverter<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> {
 
   @Override
@@ -83,5 +83,13 @@ public class ClassicAccumuloEntryConverter implements
   public Value getValue(Entry<Key, Value> entry) {
     return entry.getValue();
   }
+  
+  private ClassicAccumuloEntryConverter(){}
 
+  private static final ClassicAccumuloEntryConverter SINGLETON = new ClassicAccumuloEntryConverter();
+  
+  public static EntryConverter<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> getClassicConverter(){
+    return SINGLETON;
+  }
+  
 }

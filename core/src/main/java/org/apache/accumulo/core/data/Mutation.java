@@ -16,6 +16,8 @@
  */
 package org.apache.accumulo.core.data;
 
+import static org.apache.accumulo.core.client.ClassicAccumuloEntryConverter.getClassicConverter;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -23,7 +25,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 
+import org.apache.accumulo.core.client.ClassicAccumuloEntryConverter;
 import org.apache.accumulo.core.data.thrift.TMutation;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.accumulo.core.util.ByteBufferUtil;
@@ -52,33 +56,7 @@ import org.apache.hadoop.io.WritableUtils;
  * 
  */
 
-public class Mutation implements Writable {
-  
-  static final int VALUE_SIZE_COPY_CUTOFF = 1 << 15;
-  
-  public static enum SERIALIZED_FORMAT {
-     VERSION1,
-     VERSION2
-  };
-  
-  private boolean useOldDeserialize = false;
-  private byte[] row;
-  private byte[] data;
-  private int entries;
-  private List<byte[]> values;
-  
-  private UnsynchronizedBuffer.Writer buffer;
-  
-  private List<ColumnUpdate> updates;
-  
-  private static final byte[] EMPTY_BYTES = new byte[0];
-  
-  private void serialize() {
-    if (buffer != null) {
-      data = buffer.toArray();
-      buffer = null;
-    }
-  }
+public class Mutation extends GenericMutation<Entry<Key, Value>, Text, Text, Text, Text, Long, Value> {
   
   /**
    * @since 1.5.0
@@ -91,9 +69,7 @@ public class Mutation implements Writable {
    * @since 1.5.0
    */
   public Mutation(byte[] row, int start, int length) {
-    this.row = new byte[length];
-    System.arraycopy(row, start, this.row, 0, length);
-    buffer = new UnsynchronizedBuffer.Writer();
+    super(row, start, length,getClassicConverter());
   }
   
   public Mutation(Text row) {
@@ -104,46 +80,20 @@ public class Mutation implements Writable {
     this(new Text(row.toString()));
   }
   
-  public Mutation() {}
+  public Mutation() {
+    super(getClassicConverter());
+  }
   
   public Mutation(TMutation tmutation) {
-    this.row = ByteBufferUtil.toBytes(tmutation.row);
-    this.data = ByteBufferUtil.toBytes(tmutation.data);
-    this.entries = tmutation.entries;
-    this.values = ByteBufferUtil.toBytesList(tmutation.values);
+    super(tmutation, getClassicConverter());
   }
   
   public Mutation(Mutation m) {
-    m.serialize();
-    this.row = m.row;
-    this.data = m.data;
-    this.entries = m.entries;
-    this.values = m.values;
+    super(m);
   }
   
   public byte[] getRow() {
     return row;
-  }
-  
-  private void put(byte b[]) {
-    put(b, b.length);
-  }
-  
-  private void put(byte b[], int length) {
-    buffer.writeVLong(length);
-    buffer.add(b, 0, length);
-  }
-  
-  private void put(boolean b) {
-    buffer.add(b);
-  }
-  
-  private void put(int i) {
-    buffer.writeVLong(i);
-  }
-  
-  private void put(long l) {
-    buffer.writeVLong(l);
   }
   
   private void put(byte[] cf, byte[] cq, byte[] cv, boolean hasts, long ts, boolean deleted, byte[] val) {
@@ -158,31 +108,7 @@ public class Mutation implements Writable {
   }
   
   private void put(byte[] cf, int cfLength, byte[] cq, int cqLength, byte[] cv, boolean hasts, long ts, boolean deleted, byte[] val, int valLength) {
-    if (buffer == null) {
-      throw new IllegalStateException("Can not add to mutation after serializing it");
-    }
-    put(cf, cfLength);
-    put(cq, cqLength);
-    put(cv);
-    put(hasts);
-    if (hasts) {
-      put(ts);
-    }
-    put(deleted);
-    
-    if (valLength < VALUE_SIZE_COPY_CUTOFF) {
-      put(val, valLength);
-    } else {
-      if (values == null) {
-        values = new ArrayList<byte[]>();
-      }
-      byte copy[] = new byte[valLength];
-      System.arraycopy(val, 0, copy, 0, valLength);
-      values.add(copy);
-      put(-1 * values.size());
-    }
-    
-    entries++;
+    put(new ArrayByteSequence(cf, 0, cfLength), new ArrayByteSequence(cq, 0, cqLength), new ArrayByteSequence(cv), hasts, ts, deleted, new ArrayByteSequence(val, 0, valLength));
   }
   
   private void put(CharSequence cf, CharSequence cq, byte[] cv, boolean hasts, long ts, boolean deleted, byte[] val) {
